@@ -1,0 +1,111 @@
+﻿@page "/juego"
+@rendermode InteractiveServer
+@inject IJSRuntime jsx
+@inject Contexto ctx
+@inject NavigationManager NavMan
+
+<PageTitle>video Juegos</PageTitle>
+
+<h1>Videojuegos disponibles</h1>
+
+
+
+<div class="text-end text-center mb-3">
+    <button type="button" class="btn btn-dark" @onclick="agregar">Agregar un juego</button>
+</div>
+
+<div class="row">
+    @foreach(Juegos x in juegos){
+    <div class= "col-md-4 md-3">
+        <div class="card   bg-dark"  style="width: 18rem; height:30rem ;">
+            <img class="card-img-top" src= "@x.Portada" alt="@x.Nombre" width="100px" height="160px">
+            <div class="card-body">
+                <h5 class="card-title">@x.Nombre</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Plataforma: @x.plataforma.Nombre</li>
+                    <li class="list-group-item">Desarrollador: @x.Desarrollador</li>
+                    <li class="list-group-item">Género: @x.Género</li>
+                    <li class="list-group-item">Lanzamiento: @x.Fecha</li>
+                </ul>
+                    <p class="card-text"> <td>@x.Descripción</td></p>
+                <div class="row">
+                    <button @onclick="() => editar(x.ID)" class="btn btn-light mb-3">Editar</button>
+                </div>
+                <div class="row">
+                    <button @onclick="() => borrar(x.ID)" class="btn btn-light mb-3">Borrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+
+
+@code {
+    
+    public List<Juegos>juegos=new List<Juegos>();
+    public Juegos juego= new Juegos();
+
+    void agregar(){
+
+        NavMan.NavigateTo("/juego/editar");
+    }
+
+    void editar(string id){
+        
+        NavMan.NavigateTo($"/juego/editar/{id}");
+        
+    }
+
+    async Task borrar(string id)
+{
+    var confirmacion = await jsx.InvokeAsync<bool>("confirm", "¿Desea borrar este elemento?");
+
+    if (confirmacion)
+    {
+        
+        foreach (Juegos x in juegos)
+        {
+            if (string.IsNullOrEmpty(x.ID) || x.ID.Equals(id))
+            {   
+                ctx.Juegos.Remove(x);
+                
+            }
+            
+        }
+        await ctx.SaveChangesAsync();
+        StateHasChanged();
+    }
+
+    
+}
+
+        protected override async Task OnAfterRenderAsync(bool render)
+{
+    if (render)
+    {
+        juegos = ctx.Juegos
+                    .ToList();
+
+        var elementosAEliminar = juegos.Where(x => string.IsNullOrEmpty(x.ID)).ToList();
+        foreach (var x in elementosAEliminar)
+        {
+            ctx.Juegos.Remove(x);
+        }
+        
+        
+        foreach (var y in juegos)
+            {
+                y.personajes = ctx.personajes
+                            .Where(p => p.juegosid == y.ID)
+                            .ToList();
+            }    
+        
+        
+
+        await ctx.SaveChangesAsync();
+        StateHasChanged();
+    }
+}
+}

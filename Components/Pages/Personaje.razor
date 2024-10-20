@@ -1,0 +1,56 @@
+﻿@page "/personaje"
+@rendermode InteractiveServer
+@inject IJSRuntime jsx
+@inject Contexto ctx
+@inject NavigationManager NavMan
+
+<PageTitle>Personajes</PageTitle>
+
+<h1>Personajes registrados</h1>
+
+<div class="row">
+    @foreach(Personajes x in personajes){
+    <div class= "col-md-4 md-3">
+        <div class="card   bg-dark"  style="width: 18rem; height:32rem ;">
+            <img class="card-img-top" src= "@x.Imagen" alt="@x.Nombre" width="100px" height="200px">
+            <div class="card-body">
+                <h5 class="card-title">@x.Nombre</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">VideoJuego:@x.juego.Nombre</li>
+                    <li class="list-group-item">Alias: @x.Alias</li>
+                    <li class="list-group-item">Rol: @x.Rol</li>
+                    <li class="list-group-item">Habilidad especial: @x.Habilidad</li>
+                    <li class="list-group-item">Arma: @x.Arma</li>
+                    <li class="list-group-item">Nivel: @x.Nivel</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+
+@code {
+    
+    public List<Personajes> personajes=new List<Personajes>();
+    public Personajes personaje= new Personajes();
+
+    protected override async Task OnAfterRenderAsync(bool render)
+{
+    if (render)
+    {
+        personajes = ctx.personajes
+                    .ToList();
+
+        var elementosAEliminar = personajes.Where(x => string.IsNullOrEmpty(x.ID)).ToList();
+        foreach (var x in elementosAEliminar)
+        {
+            ctx.personajes.Remove(x);
+        }
+
+        await ctx.SaveChangesAsync();
+        StateHasChanged();
+    }
+}
+    
+}

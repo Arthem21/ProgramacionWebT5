@@ -1,0 +1,185 @@
+@page "/juego/editar"
+@page "/juego/editar/{id}"
+@rendermode InteractiveServer
+@inject IJSRuntime jsx
+@inject Contexto ctx
+@inject NavigationManager NavMan
+
+<h1>Editar VideoJuego</h1>
+
+<EditForm Model="@instancia" OnValidSubmit="Guardar">
+   <DataAnnotationsValidator/>
+   <ValidationSummary/>
+   
+   <div class="row">
+      <div class="col">
+        <div class="mb-3">
+            <label for="Nombre" class="form-label">Nombre</label>
+                <InputText id="Nombre" class="form-control" @bind-Value="@instancia.Nombre"/>
+            <ValidationMessage For="@(()=>instancia.Nombre)"/>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="mb-3">
+            <label for="Desarrollador" class="form-label">Desarrollador</label>
+                <InputText id="Desarrollador" class="form-control" @bind-Value="@instancia.Desarrollador"/>
+            <ValidationMessage For="@(()=>instancia.Desarrollador)"/>
+        </div>
+    </div>
+    <div class="col">
+        <div class="mb-3">
+            <label for="Género" class="form-label">Género</label>
+                <InputText id="Género" class="form-control" @bind-Value="@instancia.Género"/>
+            <ValidationMessage For="@(()=>instancia.Género)"/>
+        </div>
+      </div>
+   </div>
+
+   <div class="row">
+      <div class="col">
+        <div class="mb-3">
+            <label for="Plataforma" class="form-label">Plataforma</label>
+            <InputSelect class="form-control" id="select" @bind-Value="@instancia.plataformaID" >
+                <option disabled>Selecciona una Plataforma</option>
+                @foreach(var x in plataformas){
+                    if(x.Estado){
+                    <option value="@x.ID"  >@x.Nombre</option>
+                    }
+                }
+            </InputSelect>
+        </div>
+    </div>
+    
+    <div class="col">
+        <div class="mb-3">
+            <label for="Fecha" class="form-label">Fecha de lanzamiento </label>
+                <InputDate id="Fecha" class="form-control" @bind-Value="@instancia.Fecha"/>
+            <ValidationMessage For="@(()=>instancia.Fecha)"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="Portada" class="form-label">Url de la Portada </label>
+            <InputText id="Portada" class="form-control" @bind-Value="@instancia.Portada"/>
+        <ValidationMessage For="@(()=>instancia.Portada)"/>
+    </div>
+      
+    <div class="text-center">  
+            <img src="@instancia.Portada" alt="@instancia.Nombre" width="300">
+    </div>
+
+
+
+<div class="row">
+    @foreach(Personajes x in instancia.personajes){
+    <div class= "col-md-4 md-3">
+        <div class="card   bg-dark"  style="width: 18rem; ">
+            <img class="card-img-top" src= "@x.Imagen" alt="@x.Nombre" width="100px" height="200px">
+            <div class="card-body">
+                <h5 class="card-title">Nombre:<InputText @bind-Value="x.Nombre" class="form-control"/></h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">VideoJuego:@x.juego.Nombre</li>
+                    <li class="list-group-item"><td>Alias:<InputText @bind-Value="x.Alias" class="form-control"/> </td></li>
+                    <li class="list-group-item">Rol: <InputText @bind-Value="x.Rol" class="form-control"/></li>
+                    <li class="list-group-item">Habilidad especial: <InputText @bind-Value="x.Habilidad" class="form-control"/></li>
+                    <li class="list-group-item"><td><InputText @bind-Value="x.Arma" class="form-control"/> </td></li>
+                    <li class="list-group-item">Nivel: <InputNumber @bind-Value="x.Nivel" class="form-control"/></li>
+                    <li class="list-group-item">URl de la imagen: <InputText @bind-Value="x.Imagen" class="form-control"/></li>
+                    <li> <button @onclick="@(()=>borrar(x.ID))" type="button" class=" btn btn-light mb-3 text-center">Borrar personaje</button></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+<div class="text-center mb-3">  
+            <div><button @onclick="agregar" type="button" class=" btn btn-dark mb-3">Agregar un nuevo personaje</button></div>
+            <div><button type="submit" class=" btn btn-dark  ">Guardar videoJuego</button></div>
+    </div>
+   
+</EditForm>
+
+
+
+
+@code{
+
+    [Parameter]
+    public string ID{set;get;}=" ";
+
+    public Juegos instancia= new Juegos();
+    public List<Plataformas> plataformas= new List<Plataformas>();
+
+    void agregar()
+    {
+    Personajes nuevoPersonaje = new Personajes();
+    instancia.personajes.Add(nuevoPersonaje);
+    ctx.personajes.Add(nuevoPersonaje);
+    StateHasChanged();
+    }
+
+    void borrar(string id)
+{
+    Personajes personajeAEliminar = instancia.personajes.FirstOrDefault(y => y.ID.Equals(id));
+
+    if (personajeAEliminar != null)
+    {
+        instancia.personajes.Remove(personajeAEliminar);
+        ctx.personajes.Remove(personajeAEliminar);
+        StateHasChanged();
+    }
+}
+    async Task Guardar(){
+
+        foreach(Plataformas x in ctx.plataformas){
+            if(instancia.plataformaID==x.ID){
+                instancia.plataforma=x;
+            }
+         }
+
+      if(string.IsNullOrEmpty(ID)){
+
+         instancia.ID= Guid.NewGuid().ToString();
+         
+         ctx.Juegos.Add(instancia);
+            
+      }
+      else{
+         ctx.Juegos.Update(instancia);
+      }
+
+      await ctx.SaveChangesAsync();
+      await jsx.InvokeVoidAsync("alert","Datos Guardados");
+      NavMan.NavigateTo($"/juego");
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool render)
+    {
+        if (render)
+        {
+            if (!string.IsNullOrEmpty(ID))
+            {
+                instancia = ctx.Juegos.FirstOrDefault(x => x.ID == ID); new Juegos();
+
+                foreach (Personajes x in ctx.personajes)
+                {
+                    if (x.juegosid == ID && !instancia.personajes.Any(p => p.ID == x.ID))
+                    {
+                        instancia.personajes.Add(x);
+                    }
+                }
+
+                
+            }
+
+            foreach(Plataformas y in ctx.plataformas){
+                plataformas.Add(y);
+            }
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,85 @@
+@page "/plataforma/editar"
+@page "/plataforma/editar{ID}"
+@rendermode InteractiveServer
+@inject IJSRuntime jsx
+@inject Contexto ctx
+@inject NavigationManager NavMan
+
+
+<h1>Editar Plataforma</h1>
+
+<EditForm Model="@instancia" OnValidSubmit="Guardar">
+   <DataAnnotationsValidator/>
+   <ValidationSummary/>
+
+   
+    <div class="mb-3">
+        <label for="Nombre" class="form-label">Nombre</label>
+            <InputText id="Nombre" class="form-control" @bind-Value="@instancia.Nombre"/>
+        <ValidationMessage For="@(()=>instancia.Nombre)"/>
+    </div>
+
+    <div class="mb-3">
+        <label for="icono" class="form-label">Url del Logo</label>
+            <InputText id="icono" class="form-control" @bind-Value="@instancia.icono"/>
+        <ValidationMessage For="@(()=>instancia.icono)"/>
+    </div>
+      
+    <div class="text-center bm-3">  
+            <img src="@instancia.icono" alt="@instancia.Nombre" width="300">
+    </div>
+   
+   <div class="text-center bm-3">
+      <button type="submit" class="btn btn-dark">Guardar plataforma</button>
+   </div>
+</EditForm>
+
+
+
+
+@code{
+
+    [Parameter]
+    public string ID{set;get;}="";
+
+    public Plataformas instancia= new Plataformas();
+
+    async Task Guardar(){
+
+      if(string.IsNullOrEmpty(ID)){
+
+         instancia.ID= Guid.NewGuid().ToString();
+         ctx.plataformas.Add(instancia);
+            
+      }
+      else{
+         ctx.plataformas.Update(instancia);
+      }
+
+      await ctx.SaveChangesAsync();
+      await jsx.InvokeVoidAsync("alert","Datos Guardados");
+      NavMan.NavigateTo($"/plataforma");
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool render)
+    {
+        if (render)
+        {
+            if (!string.IsNullOrEmpty(ID))
+            {
+                instancia = ctx.plataformas.FirstOrDefault(x => x.ID == ID); new Plataforma();
+
+                foreach (Juegos x in ctx.Juegos)
+                {
+                    if (x.plataformaID == ID && !instancia.juegos.Any(p => p.ID == x.ID))
+                    {
+                        instancia.juegos.Add(x);
+                    }
+                }
+
+                StateHasChanged();
+            }
+        }
+    }
+}

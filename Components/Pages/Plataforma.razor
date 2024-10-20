@@ -1,0 +1,139 @@
+﻿@page "/plataforma"
+@rendermode InteractiveServer
+@inject IJSRuntime jsx
+@inject Contexto ctx
+@inject NavigationManager NavMan
+
+<PageTitle>Pataformas</PageTitle>
+
+<h1>Plataformas</h1>
+
+
+<div class="text-end text-center mb-3">
+    <button type="button" class=" btn btn-dark " @onclick="agregar">Crear una plataforma</button>
+</div>
+
+
+<div class="row">
+    @foreach(Plataformas x in plataformas){
+    <div class= "col-md-4 md-3">
+        <div class="card   bg-dark"  style="width: 18rem; height:28rem ;">
+            <img class="card-img-top" src= "@x.icono" alt="@x.Nombre" width="100px" height="200px">
+            <div class="card-body">
+                <h5 class="card-title">@x.Nombre</h5>
+                    <p class="card-text"> @if(x.Estado){
+                            <td>Activo</td>
+                        }
+                        else{
+                            <td>Inactivo</td>
+                        }
+                    </p>
+                <div class="row">
+                    <button @onclick="() => editar(x.ID)" class="btn btn-light  mb-3">Editar</button>
+                </div>
+                <div class="row">
+                    <button @onclick="() => CambiarEstado(x.ID)" class="btn btn-light  mb-3">Cambiar estado</button>
+                </div>
+                <div class="row">
+                    <button @onclick="() => borrar(x.ID)" class="btn btn-light     mb-3">Borrar plataforma</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+
+
+@code {
+    
+    public List<Plataformas> plataformas=new List<Plataformas>();
+    public Plataformas plataforma= new Plataformas();
+
+    public void agregar(){
+        NavMan.NavigateTo("/plataforma/editar");
+    }
+    
+    public void editar(string ID){
+        NavMan.NavigateTo($"/plataforma/editar{ID}");
+    }
+
+    async Task borrar(string id)
+{
+    var confirmacion = await jsx.InvokeAsync<bool>("confirm", "¿Desea borrar este elemento?");
+
+    if (confirmacion)
+    {
+        
+        foreach (Plataformas x in plataformas)
+        {
+            if (string.IsNullOrEmpty(x.ID) || x.ID.Equals(id))
+            {
+                ctx.plataformas.Remove(x);
+                
+            }
+        }
+        await ctx.SaveChangesAsync();
+        StateHasChanged();
+    }
+}
+
+    async Task CambiarEstado(string y){
+   
+    foreach (var x in plataformas){
+        if(x.ID==y){
+            if(x.Estado==true){
+                x.Estado= false;
+                }
+
+                else{
+                    x.Estado= true;
+                }
+                    
+                ctx.plataformas.Update(x);
+                
+
+                await ctx.SaveChangesAsync();
+                StateHasChanged();
+
+        }
+    }
+   
+    
+}
+
+
+    protected override async Task OnAfterRenderAsync(bool render)
+{
+    if (render)
+    {
+        plataformas = ctx.plataformas
+                         .ToList();
+
+        var elementosAEliminar = plataformas.Where(x => string.IsNullOrEmpty(x.ID)||string.IsNullOrEmpty(x.Nombre)).ToList();
+        foreach (var elemento in elementosAEliminar)
+        {
+            ctx.plataformas.Remove(elemento);
+        }
+        
+        foreach (var x in plataformas)
+        {
+            x.juegos = ctx.Juegos
+                        .Where(p => p.plataformaID == x.ID)
+                        .ToList();
+            
+            foreach (var y in x.juegos)
+            {
+                y.personajes = ctx.personajes
+                            .Where(p => p.juegosid == y.ID)
+                            .ToList();
+            }
+        }
+
+        await ctx.SaveChangesAsync();
+        StateHasChanged();
+    }
+}
+
+    
+}
